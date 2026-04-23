@@ -1,14 +1,13 @@
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.UI; // Si usas el Dropdown clásico
-using TMPro;           // Si usas TextMeshPro (recomendado)
+using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 public class LlenarDropdownPerros : MonoBehaviour
 {
-    public TMP_Dropdown miDropdown; // Arrastra aquí tu Dropdown de TextMeshPro
+    public TMP_Dropdown miDropdown;
     private string urlLista = "https://dog.ceo/api/breeds/list/all";
 
     void Start()
@@ -25,32 +24,61 @@ public class LlenarDropdownPerros : MonoBehaviour
             if (web.result == UnityWebRequest.Result.Success)
             {
                 string json = web.downloadHandler.text;
-                List<string> razas = ExtraerRazas(json);
+                List<string> razas = ExtraerRazasCompuestas(json);
                 
-                // Limpiar y llenar el Dropdown
                 miDropdown.ClearOptions();
+                // Añadimos una opción neutra al principio
+                miDropdown.AddOptions(new List<string> { "Selecciona una raza..." });
                 miDropdown.AddOptions(razas);
                 
-                Debug.Log("Dropdown actualizado con " + razas.Count + " razas.");
+                Debug.Log("Dropdown actualizado con " + razas.Count + " variantes de razas.");
             }
         }
     }
 
-    // Método "ninja" para sacar las razas sin usar una clase compleja
-    List<string> ExtraerRazas(string json)
+    List<string> ExtraerRazasCompuestas(string json)
     {
         List<string> listaFinal = new List<string>();
-        
-        // Buscamos lo que hay entre comillas antes de los dos puntos ":" 
-        // dentro de la sección "message"
-        string patron = @"""(\w+)"":\[";
-        MatchCollection matches = Regex.Matches(json, patron);
+
+        // Este Regex busca la raza principal y el contenido de su lista de sub-razas
+        // Ejemplo: "hound":["afghan","basset"...]
+        string patronPrincipal = @"""(\w+)"":\[([^\]]*)\]";
+        MatchCollection matches = Regex.Matches(json, patronPrincipal);
 
         foreach (Match m in matches)
         {
-            listaFinal.Add(m.Groups[1].Value);
+            string razaPrincipal = m.Groups[1].Value; // ej: hound
+            string subRazasRaw = m.Groups[2].Value;   // ej: "afghan","basset"
+
+            if (string.IsNullOrEmpty(subRazasRaw))
+            {
+                // Si no tiene sub-razas, añadimos solo la principal
+                listaFinal.Add(razaPrincipal);
+            }
+            else
+            {
+                // Si tiene sub-razas, las extraemos y creamos el nombre compuesto
+                // Buscamos palabras entre comillas dentro de la lista
+                MatchCollection subMatches = Regex.Matches(subRazasRaw, @"""(\w+)""");
+                
+                if (subMatches.Count == 0)
+                {
+                    listaFinal.Add(razaPrincipal);
+                }
+                else
+                {
+                    foreach (Match sm in subMatches)
+                    {
+                        string subRaza = sm.Groups[1].Value;
+                        // Creamos la palabra compuesta (ej: afghan hound)
+                        // Nota: La API suele identificar las fotos como "raza-subraza"
+                        listaFinal.Add(subRaza + " " + razaPrincipal);
+                    }
+                }
+            }
         }
 
+        listaFinal.Sort(); // Opcional: Ordenar alfabéticamente
         return listaFinal;
     }
 }
