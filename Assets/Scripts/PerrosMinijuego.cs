@@ -1,29 +1,31 @@
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.UI; // Necesario para mostrar la imagen en la interfaz
+using UnityEngine.UI;
 using System.Collections;
+using TMPro;
 
 public class LogicaPerros : MonoBehaviour
 {
-    public RawImage contenedorImagen; // Arrastra aquí un RawImage de tu UI
+    public RawImage contenedorImagen;
+    public TMP_Dropdown dropdownRazas;
+    public string razaCorrecta; // Aquí guardaremos el nombre formateado (ej: "afghan hound")
+    public TextMeshProUGUI textoResultado;
     private string urlApi = "https://dog.ceo/api/breeds/image/random";
 
     void Start()
     {
-        // Primera carga al empezar
         CargarNuevoPerro();
     }
 
-    // Método que llamarás desde un botón de la UI
     public void CargarNuevoPerro()
     {
-        StopAllCoroutines(); // Evita que se solapen si el usuario pulsa muy rápido
-        StartCoroutine(ObtenerPerrito());
+        BorrarResultado();
+        StopAllCoroutines();
+        StartCoroutine(ObtenerPerro());
     }
 
-    IEnumerator ObtenerPerrito()
+    IEnumerator ObtenerPerro()
     {
-        // 1. Llamada a la API para obtener el JSON
         using (UnityWebRequest solicitudJson = UnityWebRequest.Get(urlApi))
         {
             yield return solicitudJson.SendWebRequest();
@@ -33,9 +35,34 @@ public class LogicaPerros : MonoBehaviour
                 RespuestaImagen datos = JsonUtility.FromJson<RespuestaImagen>(solicitudJson.downloadHandler.text);
                 string urlImagen = datos.message;
 
-                // 2. Llamada multimedia para descargar la imagen (Textura)
+                // 1. Extraemos el texto de la URL (ej: "hound-afghan" o "beagle")
+                string[] partes = urlImagen.Split('/');
+                string razaCruda = partes[4];
+
+                // 2. FORMATEO: Convertimos "raza-subraza" a "subraza raza"
+                razaCorrecta = FormatearNombreRaza(razaCruda);
+
                 yield return StartCoroutine(DescargarImagen(urlImagen));
             }
+        }
+    }
+
+    // Función auxiliar para que el formato coincida con el Dropdown
+    string FormatearNombreRaza(string texto)
+    {
+        if (texto.Contains("-"))
+        {
+            // Si contiene "-", es compuesta: ej "hound-afghan"
+            string[] subPartes = texto.Split('-');
+            string razaPrincipal = subPartes[0];
+            string subRaza = subPartes[1];
+            // Devolvemos "afghan hound" para que coincida con el Dropdown
+            return subRaza + " " + razaPrincipal;
+        }
+        else
+        {
+            // Si no tiene "-", es simple: ej "beagle"
+            return texto;
         }
     }
 
@@ -47,10 +74,37 @@ public class LogicaPerros : MonoBehaviour
 
             if (solicitudImagen.result == UnityWebRequest.Result.Success)
             {
-                // Convertimos la descarga en una textura y la aplicamos al RawImage
                 Texture2D textura = DownloadHandlerTexture.GetContent(solicitudImagen);
                 contenedorImagen.texture = textura;
             }
         }
+    }
+
+    // Este es el método que debes conectar al evento OnValueChanged del Dropdown
+    public void ComprobarRespuestaAutomatica(int indice)
+    {
+        // 1. Limpiamos el texto del usuario (quitamos espacios y pasamos a minúsculas)
+        string seleccionUsuario = dropdownRazas.options[indice].text.ToLower().Trim();
+
+        // 2. Limpiamos la respuesta correcta (por si acaso quedó algún espacio)
+        string respuestaLimpia = razaCorrecta.ToLower().Trim();
+
+        // LOG DE SEGURIDAD: Esto te permite ver en la consola qué está pasando exactamente
+        Debug.Log("Comparando: [" + seleccionUsuario + "] con [" + respuestaLimpia + "]");
+
+        if (seleccionUsuario == respuestaLimpia)
+        {
+            textoResultado.text = "<color=green>¡CORRECTO!</color> Es un " + razaCorrecta;
+        }
+        else
+        {
+            textoResultado.text = "<color=red>FALLASTE.</color> Era un " + razaCorrecta;
+        }
+    }
+
+    public void BorrarResultado()
+    {
+        if (textoResultado != null) textoResultado.text = "Adivina la raza...";
+        if (dropdownRazas != null) dropdownRazas.value = 0;
     }
 }
