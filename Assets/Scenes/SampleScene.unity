@@ -1473,6 +1473,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   contenedorImagen: {fileID: 809419271}
+  dropdownRazas: {fileID: 1851365963}
+  razaCorrecta: 
+  textoResultado: {fileID: 2024898117}
 --- !u!4 &1279984520
 Transform:
   m_ObjectHideFlags: 0
@@ -2234,7 +2237,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1965106653}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1279984519}
+        m_TargetAssemblyTypeName: LogicaPerros, Assembly-CSharp
+        m_MethodName: CargarNuevoPerro
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1965106653
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2330,7 +2345,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New Text
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
